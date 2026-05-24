@@ -18,7 +18,7 @@ Motor de ML.
 | Gabriel Padula | 554907 |
 | Rodrigo Nakata | 556417 |
 
-**Turma:** _(preencher)_  ·  **Disciplina:** Arquitetura Orientada a Serviços e Web Services  ·  **Desafio 02 — Ford FIAP 2026**
+**Disciplina:** Arquitetura Orientada a Serviços e Web Services  ·  **Desafio 02 — Ford FIAP 2026**
 
 ---
 
