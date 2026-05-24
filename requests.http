@@ -1,0 +1,134 @@
+### Ford Conecta — coleção de requests (VS Code REST Client / IntelliJ HTTP)
+### Rode na ordem. Faça o login primeiro para popular {{token}}.
+
+@baseUrl = http://localhost:3000
+@api = {{baseUrl}}/api
+
+### Health
+GET {{baseUrl}}/health
+
+### Login (admin) — captura o token
+# @name login
+POST {{api}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "admin@fordconecta.com",
+  "password": "Admin@12345"
+}
+
+###
+@token = {{login.response.body.accessToken}}
+
+### Perfil do usuário autenticado
+GET {{api}}/auth/me
+Authorization: Bearer {{token}}
+
+### Auto-cadastro (papel customer)
+POST {{api}}/auth/register
+Content-Type: application/json
+
+{
+  "name": "Cliente App",
+  "email": "cliente@example.com",
+  "password": "Cliente@123"
+}
+
+### Listar clientes (paginado)
+GET {{api}}/customers?page=1&limit=10
+Authorization: Bearer {{token}}
+
+### Criar cliente
+# @name novoCliente
+POST {{api}}/customers
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Pedro Almeida",
+  "document": "66666666666",
+  "email": "pedro@example.com",
+  "phone": "+5511988887777",
+  "city": "São Paulo",
+  "state": "SP"
+}
+
+###
+@customerId = {{novoCliente.response.body.id}}
+
+### Listar concessionárias
+# @name dealers
+GET {{api}}/dealerships
+Authorization: Bearer {{token}}
+
+### Cadastrar veículo
+POST {{api}}/vehicles
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "vin": "9BFZK54P5J8000777",
+  "model": "Ranger",
+  "modelYear": 2025,
+  "purchaseDate": "2025-04-10",
+  "odometer": 500,
+  "customerId": "{{customerId}}"
+}
+
+### Veículos de um cliente
+GET {{api}}/vehicles/customer/{{customerId}}
+Authorization: Bearer {{token}}
+
+### Predição — perfil "fiel" (à vista, garantia longa, maduro)
+POST {{api}}/predictions
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "customerId": "{{customerId}}",
+  "age": 52,
+  "monthlyIncome": 15000,
+  "vehiclePrice": 180000,
+  "paymentMethod": "cash",
+  "region": "Sudeste",
+  "purchaseChannel": "dealership",
+  "hasTradeIn": true,
+  "warrantyMonths": 48
+}
+
+### Predição — perfil "abandono" (financiado, esticado, garantia mínima)
+POST {{api}}/predictions
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "customerId": "{{customerId}}",
+  "age": 24,
+  "monthlyIncome": 4000,
+  "vehiclePrice": 120000,
+  "paymentMethod": "financing",
+  "region": "Sudeste",
+  "purchaseChannel": "online",
+  "hasTradeIn": false,
+  "warrantyMonths": 6
+}
+
+### Lista de risco (Cockpit) — ordenada por maior risco
+GET {{api}}/predictions?page=1&limit=10
+Authorization: Bearer {{token}}
+
+### --- CASOS DE ERRO (para demonstrar tratamento) ---
+
+### 401 — sem token
+GET {{api}}/customers
+
+### 400 — validação (CPF inválido, e-mail inválido, campos faltando)
+POST {{api}}/customers
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "name": "x", "document": "123", "email": "naoémail" }
+
+### 404 — recurso inexistente
+GET {{api}}/customers/00000000-0000-0000-0000-000000000000
+Authorization: Bearer {{token}}
