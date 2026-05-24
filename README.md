@@ -12,13 +12,11 @@ Motor de ML.
 
 ## Equipe
 
-> ⚠️ **Preencher antes da entrega** (RM, turma e demais integrantes).
-
 | Integrante | RM |
 |---|---|
-| Arthur Ferreira | _(RM)_ |
-| _(integrante 2)_ | _(RM)_ |
-| _(integrante 3)_ | _(RM)_ |
+| Arthur Abonizio | 555506 |
+| Gabriel Padula | 554907 |
+| Rodrigo Nakata | 556417 |
 
 **Turma:** _(preencher)_  ·  **Disciplina:** Arquitetura Orientada a Serviços e Web Services  ·  **Desafio 02 — Ford FIAP 2026**
 

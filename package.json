@@ -14,7 +14,7 @@
     "migration:generate": "npm run typeorm -- migration:generate ./src/database/migrations/InitialSchema -d ./src/config/data-source.ts",
     "migration:run": "npm run typeorm -- migration:run -d ./src/config/data-source.ts",
     "migration:revert": "npm run typeorm -- migration:revert -d ./src/config/data-source.ts",
-    "seed": "ts-node -r tsconfig-paths/register src/database/seed.ts",
+    "seed": "ts-node src/database/seed.ts",
     "db:up": "docker compose up -d",
     "db:down": "docker compose down"
   },
