@@ -1,0 +1,309 @@
+Ford Conecta — Web Services | Evidência de execução dos testes automatizados
+Comando: npm run test:all -- --verbose
+Data: 2026-09-26 13:26:46 -0300
+Ambiente: Node v24.13.1 · PostgreSQL 16 (docker compose) · MINGW64_NT-10.0-26200
+================================================================================
+
+
+
+PASS test/authorization.e2e-spec.ts
+  Autorização por perfil (e2e)
+    √ anonymous get /api/customers/:own → 401 (9 ms)
+    √ anonymous post /api/predictions → 401 (5 ms)
+    √ customer get /api/customers/me → 200 (12 ms)
+    √ customer get /api/customers/:own → 200 (12 ms)
+    √ customer get /api/customers/:other → 403 (9 ms)
+    √ customer get /api/customers/:own/vehicles → 200 (21 ms)
+    √ customer get /api/customers/:other/vehicles → 403 (8 ms)
+    √ customer get /api/vehicles/:ownVehicle → 200 (12 ms)
+    √ customer get /api/vehicles/:otherVehicle → 403 (11 ms)
+    √ customer get /api/dealerships → 200 (10 ms)
+    √ customer get /api/customers → 403 (6 ms)
+    √ customer get /api/vehicles → 403 (7 ms)
+    √ customer post /api/customers → 403 (6 ms)
+    √ customer patch /api/customers/:own → 403 (6 ms)
+    √ customer get /api/predictions → 403 (7 ms)
+    √ customer get /api/customers/:own/predictions → 403 (6 ms)
+    √ customer get /api/users → 403 (6 ms)
+    √ analyst get /api/customers → 200 (12 ms)
+    √ analyst get /api/customers/:other → 200 (11 ms)
+    √ analyst get /api/vehicles/:otherVehicle → 200 (10 ms)
+    √ analyst get /api/predictions → 200 (10 ms)
+    √ analyst get /api/customers/:other/predictions → 200 (14 ms)
+    √ analyst get /api/customers/me → 403 (10 ms)
+    √ analyst delete /api/customers/:other → 403 (9 ms)
+    √ analyst delete /api/vehicles/:otherVehicle → 403 (7 ms)
+    √ analyst post /api/dealerships → 403 (6 ms)
+    √ analyst delete /api/dealerships/:dealership → 403 (9 ms)
+    √ analyst get /api/users → 403 (9 ms)
+    √ admin get /api/users → 200 (9 ms)
+    √ admin get /api/customers → 200 (7 ms)
+    √ admin get /api/customers/:other/vehicles → 200 (13 ms)
+    √ admin get /api/predictions → 200 (8 ms)
+    √ customer não vê o cliente de outro nem sabendo o id: a resposta é 403, sem dados (7 ms)
+    vínculo usuário ↔ cliente (admin)
+      √ customer sem vínculo recebe 404 em /customers/me (7 ms)
+      √ não vincula um cliente que já pertence a outro usuário (409) (18 ms)
+      √ não vincula cliente a um usuário que não é customer (400) (8 ms)
+      √ não vincula cliente inexistente (404) (10 ms)
+      √ analyst não pode vincular usuários (403) (5 ms)
+      √ admin vincula e o acesso passa a valer com o mesmo token do usuário (200) (46 ms)
+      √ admin desvincula com customerId null (200) (43 ms)
+
+PASS test/vehicles.e2e-spec.ts
+  Vehicles — REST nível 2 e negociação de conteúdo (e2e)
+    √ POST /api/vehicles cria o recurso: 201 + header Location (22 ms)
+    √ POST com VIN já cadastrado responde 409 (11 ms)
+    √ POST para cliente inexistente responde 404 (8 ms)
+    √ GET /api/customers/:id/vehicles lista os veículos do cliente (sub-recurso, 200) (24 ms)
+    √ GET /api/customers/:id/vehicles de cliente inexistente responde 404 (7 ms)
+    √ GET /api/vehicles pagina a coleção (200) (15 ms)
+    √ PATCH atualiza só o hodômetro (200) (27 ms)
+    √ PATCH não permite trocar o dono do veículo (400) (7 ms)
+    √ DELETE remove o veículo (204) e o GET seguinte responde 404 (19 ms)
+    GET /api/vehicles/:id — uma URL, duas representações
+      √ sem Accept específico devolve JSON (200) (9 ms)
+      √ Accept: application/xml devolve a ficha em XML (200) (10 ms)
+      √ Accept de um formato não suportado responde 406 (5 ms)
+
+PASS test/auth.e2e-spec.ts
+  Autenticação (e2e)
+    endpoints públicos
+      √ GET /health responde 200 sem token (10 ms)
+      √ POST /api/auth/register cria usuário com papel customer e sem hash de senha (201) (113 ms)
+      √ POST /api/auth/register com e-mail já usado responde 409 (6 ms)
+      √ POST /api/auth/register com dados inválidos responde 400 com a lista de erros (5 ms)
+      √ POST /api/auth/register não aceita escolher o papel (escalada de privilégio) → 400 (3 ms)
+    login
+      √ credenciais válidas emitem um Bearer token (200) (7 ms)
+      √ senha errada responde 401 com mensagem genérica (6 ms)
+      √ e-mail inexistente responde a MESMA mensagem (não revela quem tem conta) (5 ms)
+    endpoints protegidos
+      √ GET /api/auth/me com token devolve o perfil do usuário (200) (7 ms)
+      √ GET /api/auth/me sem token responde 401 (4 ms)
+      √ GET /api/customers sem token responde 401 (4 ms)
+      √ GET /api/vehicles sem token responde 401 (3 ms)
+      √ GET /api/dealerships sem token responde 401 (4 ms)
+      √ GET /api/predictions sem token responde 401 (3 ms)
+      √ GET /api/users sem token responde 401 (4 ms)
+
+PASS test/jwt.e2e-spec.ts
+  JWT (e2e)
+    geração
+      √ emite HS256 com sub, role, cid, iss, aud e expiração de 1h, sem dado sensível (2 ms)
+    validação
+      √ token válido é aceito (200) (10 ms)
+      √ token expirado é rejeitado (401) (4 ms)
+      √ payload adulterado (customer → admin) invalida a assinatura (401) (4 ms)
+      √ token assinado com outro segredo é rejeitado (401) (3 ms)
+      √ token de outro emissor (iss) é rejeitado (401) (4 ms)
+      √ token para outra audiência (aud) é rejeitado (401) (3 ms)
+      √ token sem assinatura (alg: none) é rejeitado (401) (3 ms)
+      √ token malformado é rejeitado (401) (3 ms)
+      √ esquema errado é rejeitado (401) (3 ms)
+      √ Bearer vazio é rejeitado (401) (2 ms)
+    uso das informações do token
+      √ token de usuário removido deixa de valer na hora (401) (31 ms)
+      √ rebaixamento de papel vale na hora, mesmo com token antigo (200 → 403) (35 ms)
+
+PASS test/predictions.e2e-spec.ts
+  Predictions (e2e)
+    √ POST gera e persiste a predição: 201 + Location (29 ms)
+    √ perfil de baixo risco sai como "fiel" e com risco baixo (18 ms)
+    √ GET /api/predictions/:id devolve a predição criada (200) (8 ms)
+    √ GET /api/predictions é a lista de risco: maior risco primeiro (200) (11 ms)
+    √ GET /api/customers/:id/predictions traz o histórico do cliente (200) (8 ms)
+    √ recusa feature de comportamento futuro (anti data leakage) → 400 (5 ms)
+    √ valida domínio das features (idade < 18, forma de pagamento inválida) → 400 (6 ms)
+    √ predição para cliente inexistente responde 404 (26 ms)
+    √ GET de predição inexistente responde 404 (6 ms)
+
+PASS test/customers.e2e-spec.ts
+  Customers — REST nível 2 (e2e)
+    √ POST /api/customers cria o recurso: 201 + header Location (13 ms)
+    √ GET na URL do Location devolve o recurso criado (200) (9 ms)
+    √ POST com CPF já cadastrado responde 409 (7 ms)
+    √ POST com dados inválidos responde 400 e lista cada problema (7 ms)
+    √ POST com campo não previsto no contrato responde 400 (5 ms)
+    √ GET /api/customers pagina a coleção (200) (8 ms)
+    √ GET /api/customers com limit acima de 100 responde 400 (4 ms)
+    √ GET com id que não é UUID responde 400 (4 ms)
+    √ GET de id inexistente responde 404 no envelope padrão (7 ms)
+    √ PATCH atualiza só os campos enviados (200) (31 ms)
+    √ PATCH para um CPF de outro cliente responde 409 (9 ms)
+    √ PATCH de id inexistente responde 404 (6 ms)
+    √ DELETE remove o recurso: 204 sem corpo (8 ms)
+    √ depois do DELETE, GET e DELETE do mesmo id respondem 404 (12 ms)
+    √ rota inexistente responde 404 no mesmo envelope de erro (4 ms)
+
+PASS test/dealerships.e2e-spec.ts
+  Dealerships — CRUD (e2e)
+    √ POST cria a concessionária: 201 + Location (13 ms)
+    √ POST sem campos obrigatórios responde 400 (6 ms)
+    √ GET lista em ordem alfabética (200), para qualquer papel autenticado (6 ms)
+    √ PATCH atualiza parcialmente (200) (12 ms)
+    √ DELETE da concessionária mantém os veículos, só sem concessionária (204) (22 ms)
+
+PASS test/rate-limit.e2e-spec.ts
+  Rate limit no login (e2e)
+    √ bloqueia força bruta: depois de 3 tentativas a 4ª responde 429 (26 ms)
+
+PASS src/modules/auth/auth.service.spec.ts
+  AuthService
+    register
+      √ grava hash bcrypt (nunca a senha) e força o papel customer sem vínculo (175 ms)
+      √ recusa e-mail já cadastrado com 409 (2 ms)
+    login
+      √ assina o token só com sub, role e cid e devolve expiresIn em segundos (4 ms)
+      √ senha errada → 401 (3 ms)
+      √ e-mail inexistente → 401 com a mesma mensagem da senha errada (18 ms)
+
+PASS src/modules/auth/users.service.spec.ts
+  UsersService.update (vínculo usuário ↔ cliente)
+    √ vincula um customer a um cliente livre (1 ms)
+    √ recusa cliente já vinculado a outro usuário (409)
+    √ recusa vincular cliente a analyst/admin (400) (1 ms)
+    √ promover a analyst desfaz o vínculo com cliente
+    √ usuário inexistente → 404
+
+PASS src/common/filters/all-exceptions.filter.spec.ts
+  AllExceptionsFilter
+    √ mantém status e mensagem de uma HttpException (1 ms)
+    √ preserva a lista de erros de validação
+    √ deriva o rótulo "Unauthorized" quando a exceção não traz "error"
+    √ erro inesperado vira 500 genérico, sem stack nem mensagem interna (12 ms)
+    √ violação de índice único do Postgres vira 409, não 500 (1 ms)
+
+PASS src/modules/auth/guards/roles.guard.spec.ts
+  RolesGuard
+    √ libera rota sem @Roles para qualquer usuário autenticado
+    √ libera quando o papel do usuário está entre os exigidos
+    √ nega com 403 quando o papel não está entre os exigidos (11 ms)
+    √ nega com 403 quando não há usuário na requisição
+
+PASS src/modules/prediction/strategies/heuristic-prediction.strategy.spec.ts
+  HeuristicPredictionStrategy
+    √ cliente à vista, maduro, com garantia longa e folga financeira → fiel, risco baixo
+    √ financiado, caro para a renda, garantia mínima e online → abandono, risco alto
+    √ jovem em leasing comprando online → esquecido
+    √ risco e confiança ficam sempre em [0, 1] e a versão do modelo é informada
+    √ é determinística: a mesma entrada gera a mesma saída
+
+PASS src/modules/auth/policies/customer-access.policy.spec.ts
+  assertCustomerAccess
+    √ admin acessa qualquer cliente (1 ms)
+    √ analyst acessa qualquer cliente
+    √ customer acessa o próprio cliente
+    √ customer não acessa cliente de outra pessoa (6 ms)
+    √ customer sem vínculo não acessa nenhum cliente
+
+PASS src/config/jwt.config.spec.ts
+  buildJwtConfig
+    √ recusa subir sem JWT_SECRET (6 ms)
+    √ recusa segredo com menos de 32 caracteres (1 ms)
+    √ usa HS256, 3600s e issuer/audience padrão quando só o segredo é informado
+    √ aceita a expiração no formato antigo "900s" (1 ms)
+    √ recusa JWT_EXPIRES_IN=0
+    √ recusa JWT_EXPIRES_IN=-10
+    √ recusa JWT_EXPIRES_IN=abc
+
+-------------------------------------|---------|----------|---------|---------|-------------------
+File                                 | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s 
+-------------------------------------|---------|----------|---------|---------|-------------------
+All files                            |   98.35 |    85.35 |   97.65 |   98.16 |                   
+ src                                 |   82.35 |       50 |      50 |   82.35 |                   
+  app.setup.ts                       |   82.35 |       50 |      50 |   82.35 | 44-67,71          
+ src/common/decorators               |     100 |      100 |     100 |     100 |                   
+  api-errors.decorator.ts            |     100 |      100 |     100 |     100 |                   
+  created-resource.decorator.ts      |     100 |      100 |     100 |     100 |                   
+ src/common/dto                      |     100 |      100 |     100 |     100 |                   
+  error-response.dto.ts              |     100 |      100 |     100 |     100 |                   
+  pagination-query.dto.ts            |     100 |      100 |     100 |     100 |                   
+ src/common/entities                 |     100 |      100 |     100 |     100 |                   
+  base.entity.ts                     |     100 |      100 |     100 |     100 |                   
+ src/common/filters                  |     100 |     87.5 |     100 |     100 |                   
+  all-exceptions.filter.ts           |     100 |     87.5 |     100 |     100 | 43,59,101         
+ src/common/utils                    |   81.81 |       60 |     100 |   81.81 |                   
+  xml.util.ts                        |   81.81 |       60 |     100 |   81.81 | 15,18             
+ src/config                          |     100 |    76.92 |     100 |     100 |                   
+  database.config.ts                 |     100 |    53.84 |     100 |     100 | 13-22             
+  jwt.config.ts                      |     100 |      100 |     100 |     100 |                   
+ src/health                          |   86.66 |       50 |     100 |   84.61 |                   
+  health.controller.ts               |   86.66 |       50 |     100 |   84.61 | 28-30             
+ src/modules/auth                    |   99.11 |       95 |   94.73 |   99.04 |                   
+  auth.controller.ts                 |     100 |       75 |     100 |     100 | 33                
+  auth.service.ts                    |     100 |      100 |     100 |     100 |                   
+  users.controller.ts                |   95.23 |      100 |      75 |   94.73 | 44                
+  users.service.ts                   |     100 |      100 |     100 |     100 |                   
+ src/modules/auth/decorators         |     100 |      100 |     100 |     100 |                   
+  current-user.decorator.ts          |     100 |      100 |     100 |     100 |                   
+  roles.decorator.ts                 |     100 |      100 |     100 |     100 |                   
+ src/modules/auth/dto                |     100 |      100 |     100 |     100 |                   
+  login.dto.ts                       |     100 |      100 |     100 |     100 |                   
+  register.dto.ts                    |     100 |      100 |     100 |     100 |                   
+  update-user.dto.ts                 |     100 |      100 |     100 |     100 |                   
+  user-profile.dto.ts                |     100 |      100 |     100 |     100 |                   
+ src/modules/auth/entities           |     100 |      100 |     100 |     100 |                   
+  user.entity.ts                     |     100 |      100 |     100 |     100 |                   
+ src/modules/auth/enums              |     100 |      100 |     100 |     100 |                   
+  user-role.enum.ts                  |     100 |      100 |     100 |     100 |                   
+ src/modules/auth/guards             |     100 |      100 |     100 |     100 |                   
+  jwt-auth.guard.ts                  |     100 |      100 |     100 |     100 |                   
+  roles.guard.ts                     |     100 |      100 |     100 |     100 |                   
+ src/modules/auth/policies           |     100 |      100 |     100 |     100 |                   
+  customer-access.policy.ts          |     100 |      100 |     100 |     100 |                   
+ src/modules/auth/strategies         |     100 |      100 |     100 |     100 |                   
+  jwt.strategy.ts                    |     100 |      100 |     100 |     100 |                   
+ src/modules/customers               |     100 |      100 |     100 |     100 |                   
+  customers.controller.ts            |     100 |      100 |     100 |     100 |                   
+  customers.service.ts               |     100 |      100 |     100 |     100 |                   
+ src/modules/customers/dto           |     100 |      100 |     100 |     100 |                   
+  create-customer.dto.ts             |     100 |      100 |     100 |     100 |                   
+  update-customer.dto.ts             |     100 |      100 |     100 |     100 |                   
+ src/modules/customers/entities      |     100 |      100 |     100 |     100 |                   
+  customer.entity.ts                 |     100 |      100 |     100 |     100 |                   
+ src/modules/dealerships             |   97.82 |       50 |     100 |   97.61 |                   
+  dealerships.controller.ts          |     100 |      100 |     100 |     100 |                   
+  dealerships.service.ts             |      95 |       50 |     100 |   94.44 | 41                
+ src/modules/dealerships/dto         |     100 |      100 |     100 |     100 |                   
+  create-dealership.dto.ts           |     100 |      100 |     100 |     100 |                   
+  update-dealership.dto.ts           |     100 |      100 |     100 |     100 |                   
+ src/modules/dealerships/entities    |     100 |      100 |     100 |     100 |                   
+  dealership.entity.ts               |     100 |      100 |     100 |     100 |                   
+ src/modules/prediction              |     100 |      100 |     100 |     100 |                   
+  customer-predictions.controller.ts |     100 |      100 |     100 |     100 |                   
+  prediction.controller.ts           |     100 |      100 |     100 |     100 |                   
+  prediction.service.ts              |     100 |      100 |     100 |     100 |                   
+ src/modules/prediction/dto          |     100 |      100 |     100 |     100 |                   
+  predict.dto.ts                     |     100 |      100 |     100 |     100 |                   
+  prediction-response.dto.ts         |     100 |      100 |     100 |     100 |                   
+ src/modules/prediction/entities     |     100 |      100 |     100 |     100 |                   
+  prediction.entity.ts               |     100 |      100 |     100 |     100 |                   
+ src/modules/prediction/enums        |     100 |      100 |     100 |     100 |                   
+  customer-segment.enum.ts           |     100 |      100 |     100 |     100 |                   
+  purchase.enums.ts                  |     100 |      100 |     100 |     100 |                   
+ src/modules/prediction/strategies   |     100 |      100 |     100 |     100 |                   
+  heuristic-prediction.strategy.ts   |     100 |      100 |     100 |     100 |                   
+  prediction-strategy.interface.ts   |     100 |      100 |     100 |     100 |                   
+ src/modules/vehicles                |   94.89 |    53.33 |     100 |   94.56 |                   
+  customer-vehicles.controller.ts    |     100 |      100 |     100 |     100 |                   
+  vehicles.controller.ts             |     100 |    66.66 |     100 |     100 | 134-142           
+  vehicles.service.ts                |    87.8 |    44.44 |     100 |   87.17 | 82,86-88,99       
+ src/modules/vehicles/dto            |     100 |      100 |     100 |     100 |                   
+  create-vehicle.dto.ts              |     100 |      100 |     100 |     100 |                   
+  update-vehicle.dto.ts              |     100 |      100 |     100 |     100 |                   
+ src/modules/vehicles/entities       |     100 |      100 |     100 |     100 |                   
+  vehicle.entity.ts                  |     100 |      100 |     100 |     100 |                   
+-------------------------------------|---------|----------|---------|---------|-------------------
+
+=============================== Coverage summary ===============================
+Statements   : 98.35% ( 836/850 )
+Branches     : 85.35% ( 134/157 )
+Functions    : 97.65% ( 125/128 )
+Lines        : 98.16% ( 750/764 )
+================================================================================
+Test Suites: 15 passed, 15 total
+Tests:       146 passed, 146 total
+Snapshots:   0 total
+Time:        13.783 s, estimated 17 s
+Ran all test suites.

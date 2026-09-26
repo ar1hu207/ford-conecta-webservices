@@ -1,0 +1,57 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build-and-test:
+    name: Build + testes (unidade e e2e)
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: ford
+          POSTGRES_PASSWORD: ford_secret
+          POSTGRES_DB: ford_conecta
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ford -d ford_conecta"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DB_HOST: localhost
+      DB_PORT: 5432
+      DB_USER: ford
+      DB_PASSWORD: ford_secret
+      DB_NAME: ford_conecta
+      DB_NAME_TEST: ford_conecta_test
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Instalar dependências
+        run: npm ci
+
+      - name: Compilar
+        run: npm run build
+
+      - name: Testes de unidade + e2e com cobertura
+        run: npm run test:all -- --verbose
+
+      - name: Publicar relatório de cobertura
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: coverage/

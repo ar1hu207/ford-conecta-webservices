@@ -1,53 +1,67 @@
 ### Ford Conecta — coleção de requests (VS Code REST Client / IntelliJ HTTP)
-### Rode na ordem. Faça o login primeiro para popular {{token}}.
+### Rode na ordem, depois de npm run seed. Os logins populam {{admin}}, {{analyst}} e {{customer}}.
 
 @baseUrl = http://localhost:3000
 @api = {{baseUrl}}/api
 
-### Health
+### Health (público)
 GET {{baseUrl}}/health
 
-### Login (admin) — captura o token
-# @name login
+### ===================== AUTENTICAÇÃO =====================
+
+### Login admin
+# @name loginAdmin
 POST {{api}}/auth/login
 Content-Type: application/json
 
-{
-  "email": "admin@fordconecta.com",
-  "password": "Admin@12345"
-}
+{ "email": "admin@fordconecta.com", "password": "Admin@12345" }
 
 ###
-@token = {{login.response.body.accessToken}}
+@admin = {{loginAdmin.response.body.accessToken}}
+
+### Login analyst (pós-venda)
+# @name loginAnalyst
+POST {{api}}/auth/login
+Content-Type: application/json
+
+{ "email": "analista@fordconecta.com", "password": "Analyst@12345" }
+
+###
+@analyst = {{loginAnalyst.response.body.accessToken}}
+
+### Login customer (João, vinculado ao próprio cadastro de cliente)
+# @name loginCustomer
+POST {{api}}/auth/login
+Content-Type: application/json
+
+{ "email": "joao@example.com", "password": "Cliente@12345" }
+
+###
+@customer = {{loginCustomer.response.body.accessToken}}
 
 ### Perfil do usuário autenticado
 GET {{api}}/auth/me
-Authorization: Bearer {{token}}
+Authorization: Bearer {{customer}}
 
-### Auto-cadastro (papel customer)
+### Auto-cadastro (público; sempre papel customer, sem vínculo)
+# @name register
 POST {{api}}/auth/register
 Content-Type: application/json
 
-{
-  "name": "Cliente App",
-  "email": "cliente@example.com",
-  "password": "Cliente@123"
-}
+{ "name": "Cliente App", "email": "cliente.app@example.com", "password": "Cliente@123" }
 
-### Listar clientes (paginado)
-GET {{api}}/customers?page=1&limit=10
-Authorization: Bearer {{token}}
+### ===================== CLIENTES =====================
 
-### Criar cliente
+### Criar cliente → 201 + header Location
 # @name novoCliente
 POST {{api}}/customers
-Authorization: Bearer {{token}}
+Authorization: Bearer {{analyst}}
 Content-Type: application/json
 
 {
   "name": "Pedro Almeida",
   "document": "66666666666",
-  "email": "pedro@example.com",
+  "email": "cliente.app@example.com",
   "phone": "+5511988887777",
   "city": "São Paulo",
   "state": "SP"
@@ -56,14 +70,34 @@ Content-Type: application/json
 ###
 @customerId = {{novoCliente.response.body.id}}
 
-### Listar concessionárias
-# @name dealers
-GET {{api}}/dealerships
-Authorization: Bearer {{token}}
+### Listar clientes, paginado (admin, analyst)
+GET {{api}}/customers?page=1&limit=10
+Authorization: Bearer {{analyst}}
 
-### Cadastrar veículo
+### Atualização parcial (PATCH)
+PATCH {{api}}/customers/{{customerId}}
+Authorization: Bearer {{analyst}}
+Content-Type: application/json
+
+{ "city": "Santos" }
+
+### Admin vincula a conta do App ao cadastro do cliente
+PATCH {{api}}/users/{{register.response.body.id}}
+Authorization: Bearer {{admin}}
+Content-Type: application/json
+
+{ "customerId": "{{customerId}}" }
+
+### O dono vê o próprio cadastro
+GET {{api}}/customers/me
+Authorization: Bearer {{customer}}
+
+### ===================== VEÍCULOS =====================
+
+### Cadastrar veículo → 201 + Location
+# @name novoVeiculo
 POST {{api}}/vehicles
-Authorization: Bearer {{token}}
+Authorization: Bearer {{analyst}}
 Content-Type: application/json
 
 {
@@ -75,13 +109,27 @@ Content-Type: application/json
   "customerId": "{{customerId}}"
 }
 
-### Veículos de um cliente
-GET {{api}}/vehicles/customer/{{customerId}}
-Authorization: Bearer {{token}}
+###
+@vehicleId = {{novoVeiculo.response.body.id}}
+
+### Veículo em JSON (padrão)
+GET {{api}}/vehicles/{{vehicleId}}
+Authorization: Bearer {{analyst}}
+
+### Mesmo recurso em XML (negociação de conteúdo)
+GET {{api}}/vehicles/{{vehicleId}}
+Authorization: Bearer {{analyst}}
+Accept: application/xml
+
+### Veículos de um cliente (sub-recurso)
+GET {{api}}/customers/{{customerId}}/vehicles
+Authorization: Bearer {{analyst}}
+
+### ===================== PREDIÇÕES =====================
 
 ### Predição — perfil "fiel" (à vista, garantia longa, maduro)
 POST {{api}}/predictions
-Authorization: Bearer {{token}}
+Authorization: Bearer {{analyst}}
 Content-Type: application/json
 
 {
@@ -98,7 +146,7 @@ Content-Type: application/json
 
 ### Predição — perfil "abandono" (financiado, esticado, garantia mínima)
 POST {{api}}/predictions
-Authorization: Bearer {{token}}
+Authorization: Bearer {{analyst}}
 Content-Type: application/json
 
 {
@@ -113,22 +161,65 @@ Content-Type: application/json
   "warrantyMonths": 6
 }
 
-### Lista de risco (Cockpit) — ordenada por maior risco
+### Lista de risco (Cockpit) — maior risco primeiro
 GET {{api}}/predictions?page=1&limit=10
-Authorization: Bearer {{token}}
+Authorization: Bearer {{analyst}}
 
-### --- CASOS DE ERRO (para demonstrar tratamento) ---
+### Histórico de predições do cliente (sub-recurso)
+GET {{api}}/customers/{{customerId}}/predictions
+Authorization: Bearer {{analyst}}
+
+### ===================== ERROS E ACESSO NEGADO =====================
 
 ### 401 — sem token
 GET {{api}}/customers
 
+### 403 — customer tentando listar todos os clientes
+GET {{api}}/customers
+Authorization: Bearer {{customer}}
+
+### 403 — customer tentando ver o cliente de outra pessoa
+GET {{api}}/customers/{{customerId}}
+Authorization: Bearer {{customer}}
+
+### 403 — analyst tentando remover (só admin)
+DELETE {{api}}/customers/{{customerId}}
+Authorization: Bearer {{analyst}}
+
 ### 400 — validação (CPF inválido, e-mail inválido, campos faltando)
 POST {{api}}/customers
-Authorization: Bearer {{token}}
+Authorization: Bearer {{analyst}}
 Content-Type: application/json
 
 { "name": "x", "document": "123", "email": "naoémail" }
 
+### 400 — feature de comportamento futuro na predição (anti data leakage)
+POST {{api}}/predictions
+Authorization: Bearer {{analyst}}
+Content-Type: application/json
+
+{
+  "customerId": "{{customerId}}", "age": 30, "monthlyIncome": 5000, "vehiclePrice": 90000,
+  "paymentMethod": "cash", "region": "Sul", "purchaseChannel": "dealership",
+  "hasTradeIn": false, "warrantyMonths": 24, "revisionsDone": 3
+}
+
 ### 404 — recurso inexistente
-GET {{api}}/customers/00000000-0000-0000-0000-000000000000
-Authorization: Bearer {{token}}
+GET {{api}}/customers/00000000-0000-4000-8000-000000000000
+Authorization: Bearer {{analyst}}
+
+### 406 — formato não suportado
+GET {{api}}/vehicles/{{vehicleId}}
+Authorization: Bearer {{analyst}}
+Accept: text/csv
+
+### 409 — CPF duplicado
+POST {{api}}/customers
+Authorization: Bearer {{analyst}}
+Content-Type: application/json
+
+{ "name": "Pedro Almeida", "document": "66666666666", "email": "p@example.com", "city": "SP", "state": "SP" }
+
+### 204 — remoção (admin)
+DELETE {{api}}/vehicles/{{vehicleId}}
+Authorization: Bearer {{admin}}

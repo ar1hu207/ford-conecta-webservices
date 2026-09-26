@@ -8,66 +8,67 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import {
-  ApiBearerAuth,
-  ApiConflictResponse,
   ApiCreatedResponse,
-  ApiForbiddenResponse,
   ApiOkResponse,
   ApiOperation,
   ApiTags,
-  ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
+import { ApiErrors, ApiProtected } from '../../common/decorators/api-errors.decorator';
 import { AuthService } from './auth.service';
 import { CurrentUser } from './decorators/current-user.decorator';
-import { Roles } from './decorators/roles.decorator';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
-import { UserRole } from './enums/user-role.enum';
+import { LoginResponseDto, UserProfileDto } from './dto/user-profile.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
-import { RolesGuard } from './guards/roles.guard';
 import { AuthenticatedUser } from './strategies/jwt.strategy';
+import { UsersService } from './users.service';
+
+/**
+ * Limite mais apertado para as rotas públicas de credencial (força bruta e
+ * cadastro em massa). Lido a cada requisição para poder ser ajustado por env.
+ */
+const CREDENTIALS_THROTTLE = {
+  default: {
+    limit: () => parseInt(process.env.LOGIN_THROTTLE_LIMIT ?? '5', 10),
+    ttl: () => parseInt(process.env.LOGIN_THROTTLE_TTL ?? '60000', 10),
+  },
+};
 
 @ApiTags('auth')
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly usersService: UsersService,
+  ) {}
 
   @Post('register')
   @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({ summary: 'Auto-cadastro de usuário (papel: customer)' })
-  @ApiCreatedResponse({ description: 'Usuário criado com sucesso.' })
-  @ApiConflictResponse({ description: 'E-mail já cadastrado.' })
-  register(@Body() dto: RegisterDto) {
+  @Throttle(CREDENTIALS_THROTTLE)
+  @ApiOperation({ summary: 'Auto-cadastro de usuário (público; papel customer)' })
+  @ApiCreatedResponse({ description: 'Usuário criado.', type: UserProfileDto })
+  @ApiErrors(400, 409, 429)
+  register(@Body() dto: RegisterDto): Promise<UserProfileDto> {
     return this.authService.register(dto);
   }
 
   @Post('login')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Autentica e retorna um token JWT (Bearer)' })
-  @ApiOkResponse({ description: 'Token emitido.' })
-  @ApiUnauthorizedResponse({ description: 'Credenciais inválidas.' })
-  login(@Body() dto: LoginDto) {
+  @Throttle(CREDENTIALS_THROTTLE)
+  @ApiOperation({ summary: 'Autentica e emite um access token JWT (público)' })
+  @ApiOkResponse({ description: 'Token emitido.', type: LoginResponseDto })
+  @ApiErrors(400, 401, 429)
+  login(@Body() dto: LoginDto): Promise<LoginResponseDto> {
     return this.authService.login(dto);
   }
 
   @Get('me')
   @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth('access-token')
-  @ApiOperation({ summary: 'Dados do usuário autenticado' })
-  @ApiOkResponse({ description: 'Perfil do usuário.' })
-  @ApiUnauthorizedResponse({ description: 'Token ausente ou inválido.' })
-  me(@CurrentUser() user: AuthenticatedUser) {
-    return this.authService.findById(user.userId);
-  }
-
-  @Get('users')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN)
-  @ApiBearerAuth('access-token')
-  @ApiOperation({ summary: 'Lista todos os usuários (somente ADMIN)' })
-  @ApiOkResponse({ description: 'Lista de usuários.' })
-  @ApiForbiddenResponse({ description: 'Sem permissão (requer papel admin).' })
-  listUsers() {
-    return this.authService.listUsers();
+  @ApiProtected()
+  @ApiOperation({ summary: 'Perfil do usuário autenticado (qualquer papel)' })
+  @ApiOkResponse({ description: 'Perfil do usuário.', type: UserProfileDto })
+  me(@CurrentUser() user: AuthenticatedUser): Promise<UserProfileDto> {
+    return this.usersService.findOne(user.userId);
   }
 }

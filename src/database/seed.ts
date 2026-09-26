@@ -21,27 +21,6 @@ async function run(): Promise<void> {
   const customers = dataSource.getRepository(Customer);
   const vehicles = dataSource.getRepository(Vehicle);
 
-  // ---- Usuários (admin + analista) ----
-  if ((await users.count()) === 0) {
-    await users.save([
-      users.create({
-        name: 'Administrador',
-        email: 'admin@fordconecta.com',
-        passwordHash: await bcrypt.hash('Admin@12345', 10),
-        role: UserRole.ADMIN,
-      }),
-      users.create({
-        name: 'Analista Pós-venda',
-        email: 'analista@fordconecta.com',
-        passwordHash: await bcrypt.hash('Analyst@12345', 10),
-        role: UserRole.ANALYST,
-      }),
-    ]);
-    console.log('  ✔ Usuários criados (admin@fordconecta.com / analista@fordconecta.com)');
-  } else {
-    console.log('  • Usuários já existem, pulando.');
-  }
-
   // ---- Concessionárias ----
   let dealershipList = await dealerships.find();
   if (dealershipList.length === 0) {
@@ -122,6 +101,31 @@ async function run(): Promise<void> {
     console.log(`  ✔ ${seedData.length} clientes + veículos criados`);
   } else {
     console.log('  • Clientes já existem, pulando.');
+  }
+
+  // ---- Usuários (um por papel; idempotente por e-mail) ----
+  // O usuário customer fica vinculado ao cliente João da Silva (CPF 11111111111).
+  const joao = await customers.findOne({ where: { document: '11111111111' } });
+  const seedUsers = [
+    { name: 'Administrador', email: 'admin@fordconecta.com', password: 'Admin@12345', role: UserRole.ADMIN, customerId: null },
+    { name: 'Analista Pós-venda', email: 'analista@fordconecta.com', password: 'Analyst@12345', role: UserRole.ANALYST, customerId: null },
+    { name: 'João da Silva', email: 'joao@example.com', password: 'Cliente@12345', role: UserRole.CUSTOMER, customerId: joao?.id ?? null },
+  ];
+  for (const u of seedUsers) {
+    if (await users.findOne({ where: { email: u.email } })) {
+      console.log(`  • Usuário ${u.email} já existe, pulando.`);
+      continue;
+    }
+    await users.save(
+      users.create({
+        name: u.name,
+        email: u.email,
+        passwordHash: await bcrypt.hash(u.password, 10),
+        role: u.role,
+        customerId: u.customerId,
+      }),
+    );
+    console.log(`  ✔ Usuário ${u.email} (${u.role}) criado`);
   }
 
   await dataSource.destroy();

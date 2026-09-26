@@ -55,7 +55,8 @@ export class VehiclesService {
     };
   }
 
-  findByCustomer(customerId: string): Promise<Vehicle[]> {
+  async findByCustomer(customerId: string): Promise<Vehicle[]> {
+    await this.customersService.findOne(customerId); // 404 se o cliente não existir
     return this.vehicles.find({
       where: { customerId },
       relations: { dealership: true },

@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import {
@@ -7,6 +7,7 @@ import {
 } from '../../common/dto/pagination-query.dto';
 import { CustomersService } from '../customers/customers.service';
 import { PredictDto } from './dto/predict.dto';
+import { PredictionResponseDto } from './dto/prediction-response.dto';
 import { Prediction } from './entities/prediction.entity';
 import { CustomerSegment } from './enums/customer-segment.enum';
 import {
@@ -36,7 +37,7 @@ export class PredictionService {
     private readonly strategy: PredictionStrategy,
   ) {}
 
-  async predict(dto: PredictDto) {
+  async predict(dto: PredictDto): Promise<PredictionResponseDto> {
     // Garante que o cliente existe (404 caso contrário).
     await this.customersService.findOne(dto.customerId);
 
@@ -68,7 +69,9 @@ export class PredictionService {
   }
 
   /** Lista de risco para o Cockpit: ordenada por maior risco de evasão. */
-  async findAll(query: PaginationQueryDto): Promise<PaginatedResult<unknown>> {
+  async findAll(
+    query: PaginationQueryDto,
+  ): Promise<PaginatedResult<PredictionResponseDto>> {
     const { page, limit } = query;
     const [data, total] = await this.predictions.findAndCount({
       relations: { customer: true },
@@ -82,7 +85,16 @@ export class PredictionService {
     };
   }
 
-  async findByCustomer(customerId: string) {
+  async findOne(id: string): Promise<PredictionResponseDto> {
+    const prediction = await this.predictions.findOne({ where: { id } });
+    if (!prediction) {
+      throw new NotFoundException('Predição não encontrada');
+    }
+    return this.toResponse(prediction);
+  }
+
+  async findByCustomer(customerId: string): Promise<PredictionResponseDto[]> {
+    await this.customersService.findOne(customerId); // 404 se o cliente não existir
     const list = await this.predictions.find({
       where: { customerId },
       order: { createdAt: 'DESC' },
@@ -90,7 +102,7 @@ export class PredictionService {
     return list.map((p) => this.toResponse(p));
   }
 
-  private toResponse(p: Prediction) {
+  private toResponse(p: Prediction): PredictionResponseDto {
     return {
       id: p.id,
       customerId: p.customerId,

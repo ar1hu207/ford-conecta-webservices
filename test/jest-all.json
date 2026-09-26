@@ -1,0 +1,21 @@
+{
+  "moduleFileExtensions": ["js", "json", "ts"],
+  "rootDir": "..",
+  "testEnvironment": "node",
+  "testRegex": "(src|test)/.*(\\.|-)spec\\.ts$",
+  "transform": { "^.+\\.(t|j)s$": "ts-jest" },
+  "setupFiles": ["<rootDir>/test/setup/env.ts"],
+  "globalSetup": "<rootDir>/test/setup/global-setup.ts",
+  "testTimeout": 30000,
+  "collectCoverageFrom": [
+    "src/**/*.ts",
+    "!src/main.ts",
+    "!src/scripts/**",
+    "!src/database/**",
+    "!src/config/data-source.ts",
+    "!src/**/*.module.ts",
+    "!src/**/*.spec.ts"
+  ],
+  "coverageDirectory": "coverage",
+  "coverageReporters": ["text", "text-summary", "html", "json-summary"]
+}
